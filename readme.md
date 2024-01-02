@@ -23,6 +23,13 @@ local Ether = require("ether").Ether;
 -- Do your things
 Ether.add_protocol("foobar"):unwrap();
 Ether.host("supercool"):unwrap();
+-- Subscribe your listeners
+Ether.on("foobar", function(_, meta)
+    print("Hi from " .. meta.sender);
+end);
+t.ev:run(function()
+    Ether.send("*", "foobar", { hey = "You" });
+end);
 --- Etc
 ```
 
