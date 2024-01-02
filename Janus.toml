@@ -1,0 +1,11 @@
+type = "lib"
+
+[project]
+name = "ether"
+description = "ether project"
+version = "1.0.0"
+
+[build]
+format = "dir"
+
+[dependencies]

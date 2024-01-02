@@ -1,0 +1,147 @@
+use { ev, Promise } in tokio;
+use { Ok, Err } in result;
+use { Object } in std;
+
+class NoModemError {
+    fn to_string(self) = "No modems attached to this computer!";
+}
+
+class ProtocolAlreadyExistsError {
+    fn new(proto) = ProtocolAlreadyExistsError { proto };
+    fn to_string(self) = "Protocol " ++ tostring(self.proto) ++ " already registered!";
+}
+
+class ReservedHostNameError {
+    fn new(name) = ReservedHostNameError { name };
+    fn to_string(self) = "Host name " ++ tostring(self.name) ++ " is reserved! Please, choose another.";
+}
+
+class ProtocolDoesNotExistError {
+    fn new(name) = ProtocolDoesNotExistError { name };
+    fn to_string(self) = "Protocol " ++ tostring(self.name) ++ " does not exist on this machine!";
+}
+
+fn find_modem() {
+    let modem = peripheral.find("modem");
+    if modem == () {
+        return Err(NoModemError {});
+    }
+    return Ok(modem);
+}
+
+fn propagate(what) {
+    let [ok, value] = [pcall(what)];
+    if ok {
+        return Ok(value);
+    }
+    return Err(value);
+}
+
+class Ether {
+    fn add_protocol(name, options) = propagate in {
+        let modem = find_modem()->unwrap();
+        modem.open(Ether.BCAST_PORT);
+        options = options ?? {};
+        if Ether.protocols[name] <> () {
+            return Err(ProtocolAlreadyExistsError.new(name));
+        }
+        options.private = options.private ?? false;
+        options.channel = options.channel ?? Ether.DEFAULT_COM;
+        modem.open(options.channel);
+        Ether.protocols[name] = options;
+        return Ok(());
+    };
+
+    fn host(name) = propagate in {
+        let modem = find_modem()->unwrap();
+        modem.open(Ether.BCAST_PORT);
+        if name == "localhost" {
+            return Err(ReservedHostNameError.new(name));
+        }
+        Ether.hostname = name;
+        return Ok(ev->on("modem_message", (_, side, c, rc, message, distance) => {
+            if c == Ether.BCAST_PORT {
+                if message.body.request == "lookup" {
+                    Ether.broadcast({
+                        response: "lookup",
+                        name: Ether.hostname,
+                        protocols: Ether.protocols
+                    });
+                }
+            }
+        }));
+    };
+
+    fn lookup(timeout) = Promise.new(r => {
+        let hosts = {};
+        let clear = ev->on("modem_message", (_, side, c, rc, message, distance) => {
+            if c == Ether.BCAST_PORT and message.body.response == "lookup" {
+                hosts[message.body.name] = message.body.protocols;
+            }
+        });
+        let res = Ether.broadcast({ request: "lookup" });
+        if res.is_err() {
+            r(res);
+        } else {
+            ev->timeout(() => {
+                clear();
+                r(hosts);
+            }, timeout ?? Ether.DEFAULT_LOOKUP_TIMEOUT);
+        }
+    });
+
+    fn broadcast(body) = propagate in {
+        let modem = find_modem()->unwrap();
+        let sender_mac = Ether.MAC_ADDRESS;
+        let sender = Ether.hostname;
+        modem.transmit(Ether.BCAST_PORT, Ether.BCAST_PORT, { sender, sender_mac, body });
+        return ();
+    };
+
+    fn send(target, protocol, body) {
+        let modem = find_modem();
+        if modem->is_err() {
+            return modem;
+        }
+        modem = modem->unwrap();
+        let proto = Ether.protocols[protocol];
+        if proto == () {
+            return Err(ProtocolDoesNotExistError.new(protocol));
+        }
+        let sender_mac = Ether.MAC_ADDRESS;
+        let sender = Ether.hostname;
+        let payload = { sender, sender_mac, protocol, target, body };
+        if type(proto.rewrite_transmit) == "function" {
+            payload = proto.rewrite_transmit(payload);
+        }
+        modem.transmit(proto.channel, proto.channel, payload);
+        return Ok(());
+    }
+
+    fn on(protocol_name, callback) = ev->on("modem_message", (_, side, c, rc, message, distance) => {
+        if protocol_name <> message.protocol { return; }
+        let protocol = Ether.protocols[message.protocol];
+        if protocol == () { return; }
+        if protocol.channel <> c { return; }
+        if type(protocol.rewrite_receive) == "function" {
+            message = protocol.rewrite_receive(message);
+        }
+        if message.target <> Ether.hostname and message.target <> "*" { return; }
+        callback(message.body, message);
+    });
+}
+Ether.ev = ev;
+Ether.BCAST_PORT = 255;
+Ether.DEFAULT_COM = 254;
+Ether.protocols = {};
+Ether.DEFAULT_LOOKUP_TIMEOUT = 2;
+Ether.MAC_ADDRESS = os.getComputerID();
+
+return {
+    Ether,
+    NoModemError,
+    ProtocolAlreadyExistsError,
+    ReservedHostNameError,
+    ProtocolDoesNotExistError,
+    find_modem
+};
