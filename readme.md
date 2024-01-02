@@ -29,8 +29,12 @@ Ether.host("supercool"):unwrap();
 To get the compiled version paste:
 
 ```sh
-# TODO!
+pastebin get mtiTCVaD ether.lua
 ```
+
+> [!WARNING]
+> This paste might get outdated! Open an issue if you
+> encounter it to be outdated (Current release: 2 jan 2024)
 
 ## Example
 
