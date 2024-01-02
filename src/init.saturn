@@ -90,13 +90,17 @@ class Ether {
         }
     });
 
-    fn broadcast(body) = propagate in {
-        let modem = find_modem()->unwrap();
+    fn broadcast(body) {
+        let modem = find_modem();
+        if modem->is_err() {
+            return modem;
+        }
+        modem = modem->unwrap();
         let sender_mac = Ether.MAC_ADDRESS;
         let sender = Ether.hostname;
         modem.transmit(Ether.BCAST_PORT, Ether.BCAST_PORT, { sender, sender_mac, body });
-        return ();
-    };
+        return Ok(());
+    }
 
     fn send(target, protocol, body) {
         let modem = find_modem();
