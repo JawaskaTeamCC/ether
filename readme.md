@@ -12,6 +12,48 @@ tokio = { git = "https://github.com/JawaskaTeamCC/tokio-saturnus" }
 ether = { git = "https://github.com/JawaskaTeamCC/ether-saturnus" }
 ```
 
+## Can be used from pure Lua?
+
+Yes. Just use the compiled version, drop it in your computer
+and use like:
+
+```lua
+local Ether = require("ether").Ether;
+
+-- Do your things
+Ether.add_protocol("foobar"):unwrap();
+Ether.host("supercool"):unwrap();
+--- Etc
+```
+
+To get the compiled version paste:
+
+```sh
+# TODO!
+```
+
+## Example
+
+```rs
+Ether.send("*", "super_cool", { command: "hi" });
+let saluted = 0;
+Ether.on("super_cool", (data, meta) => {
+    if data.command == "hi" {
+        print(meta.sender ++ " salutes you!");
+        saluted += 1;
+    }
+});
+ev->timeout(() => {
+    if saluted {
+        print(saluted ++ " people said hi!");
+    } else {
+        print("no one responded, sadly :(");
+    }
+}, 0.1);
+```
+
+---
+
 ## Usage
 
 This library exposes an Ether class with static methods to run
@@ -88,6 +130,33 @@ Ether.lookup(timeout: number)
 
 Looks up for living hosts available in the current network.
 
-## Examples
+### Broadcast
 
+```php
+Ether.broadcast(body: any)
+```
 
+### Send
+
+```php
+Ether.send(host: string, protocol: string, body: any)
+```
+
+### On
+
+```php
+Ether.on(protocol: string, callback: MessageHandler)
+```
+
+```ts
+type MessageHandler = (body: any, meta: MessageInfo) => void
+```
+
+```ts
+interface MessageInfo {
+    sender: string
+    sender_mac: number
+    body: any
+    protocol?: string
+}
+```
