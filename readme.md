@@ -1,6 +1,6 @@
 # Ether net
 
-The _Ether net_ library is a _Tokio-based_ analogous to the
+The _Ether net_ library is a [_Tokio-based_](tokio) analogous to the
 builtin **rednet** library of CraftOS from ComputerCraft.
 
 To use this library, add this below your `[dependencies]`
@@ -11,6 +11,8 @@ result = { git = "https://github.com/sigmasoldi3r/result-saturnus" }
 tokio = { git = "https://github.com/JawaskaTeamCC/tokio-saturnus" }
 ether = { git = "https://github.com/JawaskaTeamCC/ether-saturnus" }
 ```
+
+[tokio]: https://github.com/JawaskaTeamCC/tokio-saturnus
 
 ## Can be used from pure Lua?
 
