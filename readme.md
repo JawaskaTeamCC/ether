@@ -9,7 +9,7 @@ section in your `Janus.toml` file:
 ```toml
 result = { git = "https://github.com/sigmasoldi3r/result-saturnus" }
 tokio = { git = "https://github.com/JawaskaTeamCC/tokio-saturnus" }
-ether = { git = "https://github.com/JawaskaTeamCC/ether-saturnus" }
+ether = { git = "https://github.com/JawaskaTeamCC/ether" }
 ```
 
 [tokio]: https://github.com/JawaskaTeamCC/tokio-saturnus
